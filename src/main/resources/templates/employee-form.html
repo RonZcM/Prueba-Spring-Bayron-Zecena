@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title id="pageTitle">Registrar Empleado</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- -R        sweetalert2 para validaciones -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        .bg-musgo { background-color: #4A5D23 !important; color: white; }
+        .btn-musgo { background-color: #4A5D23; color: white; border: none; }
+        .btn-musgo:hover { background-color: #3A491C; color: white; }
+        .text-musgo { color: #4A5D23; }
+    </style>
+</head>
+<body class="bg-light">
+<div class="container mt-5" style="max-width: 600px;">
+
+    <div class="d-flex align-items-center mb-3">
+        <img src="/images/logo.png" alt="Logo" height="50" class="me-3" onerror="this.style.display='none'">
+        <h3 class="text-musgo mb-0" id="formTitle">Registrar Empleado</h3>
+    </div>
+
+    <div class="card shadow-sm p-4 border-0 border-top border-4 border-success">
+        <form id="empForm">
+            <div class="mb-3">
+                <label class="form-label fw-bold">Código del Empleado</label>
+                <input type="text" class="form-control" id="code" placeholder="Ej. E105" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">Nombre Completo</label>
+                <input type="text" class="form-control" id="name" required>
+            </div>
+            <div class="d-flex justify-content-end gap-2 mt-4">
+                <a href="/" class="btn btn-outline-secondary">Cancelar</a>
+                <button type="submit" class="btn btn-musgo" id="submitBtn">Guardar Empleado</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // -R        extraer parametros de la url para saber si es edicion
+    const urlParams = new URLSearchParams(window.location.search);
+    const editId = urlParams.get('id');
+    const editCode = urlParams.get('code');
+    const editName = urlParams.get('name');
+    const editActive = urlParams.get('active') === 'true';
+
+    // -R        si hay id, cambiamos la interfaz a modo edicion
+    if (editId) {
+        document.getElementById('pageTitle').innerText = 'Editar Empleado';
+        document.getElementById('formTitle').innerText = 'Editar Empleado';
+        document.getElementById('submitBtn').innerText = 'Actualizar Empleado';
+
+        document.getElementById('code').value = editCode;
+        document.getElementById('name').value = editName;
+    }
+
+    document.getElementById('empForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const codeTrimmed = document.getElementById('code').value.trim();
+        const nameTrimmed = document.getElementById('name').value.trim();
+
+        // -R        validacion para evitar espacios en blanco
+        if(codeTrimmed === '' || nameTrimmed === '') {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Atención',
+                text: 'Los campos no pueden contener solo espacios en blanco.',
+                confirmButtonColor: '#4A5D23'
+            });
+            return;
+        }
+
+        const data = {
+            code: codeTrimmed,
+            name: nameTrimmed,
+            // Si es edicion conservamos su estado, si es nuevo lo hacemos activo
+            active: editId ? editActive : true
+        };
+
+        const method = editId ? 'PUT' : 'POST';
+        const url = editId ? `/api/employees/${editId}` : '/api/employees';
+
+        try {
+            const response = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                Swal.fire({
+                    icon: 'success',
+                    title: editId ? 'Empleado actualizado' : 'Empleado registrado',
+                    showConfirmButton: false,
+                    timer: 1500
+                }).then(() => {
+                    window.location.href = '/';
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Operación rechazada',
+                    text: await response.text(),
+                    confirmButtonColor: '#4A5D23'
+                });
+            }
+        } catch (error) {
+            Swal.fire('Error', 'Ocurrió un error en el servidor.', 'error');
+        }
+    });
+</script>
+</body>
+</html>
